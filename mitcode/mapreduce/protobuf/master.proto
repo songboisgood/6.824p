@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+// The greeting service definition.
+service Master {
+    rpc Register (RegisterRequest) returns (RegisterReply) {}
+}
+
+// The request message containing the user's name.
+message RegisterRequest {
+    string name = 1;
+}
+
+// The response message containing the greetings
+message RegisterReply {
+    string message = 1;
+}
