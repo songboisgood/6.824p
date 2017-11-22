@@ -1,6 +1,5 @@
 import os
 import unittest
-import asyncio
 
 from mitcode.mapreduce.job import Job
 from mitcode.mapreduce.master import Master
@@ -18,13 +17,13 @@ class MapReduceTest(unittest.TestCase):
     def _reduceFunc(self):
         pass
 
-    def _makeInput(self, numOfFiles):
+    def _makeInput(self, num_of_files):
         files = []
-        for i in range(numOfFiles):
+        for i in range(num_of_files):
             file = '824-mrinput-{0}.txt'.format(i)
             files.append(file)
             with open(file, 'w') as f:
-                for j in range(numOfFiles / self.NUM_OF_FILES):
+                for j in range(num_of_files / self.NUM_OF_FILES):
                     f.write('{0}{1}'.format(j, os.linesep))
 
         return files
@@ -39,10 +38,10 @@ class MapReduceTest(unittest.TestCase):
             self.master.register(worker)
 
     def test_basic(self):
-        job = Job("job", self.files, self._mapFunc(), self._reduceFunc)
-        self.master.do_job(job)
+        job = Job("job", self.files)
+        self.master.submit_job(job)
         self.master.wait_job(job)
-        job.assert_success()
+        assert job.assert_success()
 
     def tearDown(self):
         pass

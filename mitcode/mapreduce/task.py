@@ -13,9 +13,9 @@ class Task(object):
     def task(self):
         while True:
             message_type = yield
-            if message_type == MessageType.LaunchTask:
+            if message_type == MessageType.LAUNCH_TASK:
                 self.do_task()
-                self.worker.send_message(TaskStatus.Done)
+                self.worker.send_message(TaskStatus.DONE)
 
     def do_task(self):
         pass
@@ -25,7 +25,7 @@ class Task(object):
 
     def launch_task(self):
         next(self.t)
-        self.t.send(MessageType.LaunchTask)
+        self.t.send(MessageType.LAUNCH_TASK)
 
     def close_task(self):
         self.t.close()

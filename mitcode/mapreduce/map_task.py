@@ -19,6 +19,3 @@ class MapTask(Task):
 
     def do_task(self):
         self.do_map()
-
-
-

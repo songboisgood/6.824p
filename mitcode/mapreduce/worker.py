@@ -11,20 +11,20 @@ class Worker(object):
         super().__init__()
 
     def assign_task(self, task_args):
-        self.worker.send((MessageType.AssignTask, task_args))
+        self.worker.send((MessageType.ASSIGN_TASK, task_args))
 
     def finish_task(self, task_id):
-        self.worker.send((MessageType.TaskDone, task_id))
+        self.worker.send((MessageType.TASK_DONE, task_id))
 
     def run_worker(self):
         tasks = {}
         while True:
             message_type, message = yield
-            if message_type == MessageType.AssignTask:
+            if message_type == MessageType.ASSIGN_TASK:
                 task = message
                 task.launch_task()
                 tasks[task.task_id] = task
-            elif message_type == MessageType.TaskDone:
+            elif message_type == MessageType.TASK_DONE:
                 task_id = message
                 tasks[task_id].close_task()
 
