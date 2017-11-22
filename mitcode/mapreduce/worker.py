@@ -1,39 +1,32 @@
 import uuid
 
-from mitcode.mapreduce.constants import TaskStatus, TaskType
-from mitcode.mapreduce.task import Task
+from mitcode.mapreduce.constants import MessageType
 
 
 class Worker(object):
     def __init__(self):
         self.worker_id = uuid.uuid4()
-        self.r = self.run_worker()
+        self.worker = self.run_worker()
         self.master = None
         super().__init__()
 
-    def do_task(self, job_id, task_id, task_args):
+    def assign_task(self, task_args):
+        self.worker.send((MessageType.AssignTask, task_args))
 
-        self.tasks.append(task)
-        task.run_task(task_args)
+    def finish_task(self, task_id):
+        self.worker.send((MessageType.TaskDone, task_id))
 
     def run_worker(self):
-        tasks = []
+        tasks = {}
         while True:
-            task_args = yield (status, job_id, task_id)
-            task = Task(job_id, task_id, self)
-            task.do_task()
-            if task_args.type_type == TaskType.Map:
-                self._do_map(task_args)
-            elif task_args.type_type == TaskType.Reduce:
-                self._do_reduce(task_args)
-
-            status = TaskStatus.Done
-
-    def _do_map(self, task_args):
-        pass
-
-    def _do_reduce(self, task_args):
-        pass
+            message_type, message = yield
+            if message_type == MessageType.AssignTask:
+                task = message
+                task.launch_task()
+                tasks[task.task_id] = task
+            elif message_type == MessageType.TaskDone:
+                task_id = message
+                tasks[task_id].close_task()
 
     def start(self):
-        next(self.r)
+        next(self.worker)

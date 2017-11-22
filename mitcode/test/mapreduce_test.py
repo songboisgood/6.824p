@@ -1,5 +1,6 @@
 import os
 import unittest
+import asyncio
 
 from mitcode.mapreduce.job import Job
 from mitcode.mapreduce.master import Master
