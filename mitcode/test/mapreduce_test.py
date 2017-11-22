@@ -1,11 +1,9 @@
 import os
 import unittest
-import uuid
 
-from mitcode.job import Job
-from mitcode.worker import Worker
-
+from mitcode.mapreduce.job import Job
 from mitcode.mapreduce.master import Master
+from mitcode.mapreduce.worker import Worker
 
 
 class MapReduceTest(unittest.TestCase):
@@ -32,21 +30,18 @@ class MapReduceTest(unittest.TestCase):
 
     def setUp(self):
         self.files = self._makeInput(self.NUM_OF_FILES)
+        self.master = Master()
+        self.master.start()
+        for i in range(4):
+            worker = Worker()
+            worker.start()
+            self.master.register(worker)
 
     def test_basic(self):
-        master = Master("name")
-        master.start()
-
-        job = Job("job", self._mapFunc(), self.reduceFunc)
-
-        for i in range(2):
-            worker = Worker(uuid.uuid4(), master.address)
-            worker.doTask(job)
-
-        job.wait()
-
-        self.check()
-        self._checkWorkers()
+        job = Job("job", self.files, self._mapFunc(), self._reduceFunc)
+        self.master.do_job(job)
+        self.master.wait_job(job)
+        job.assert_success()
 
     def tearDown(self):
         pass

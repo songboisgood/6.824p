@@ -5,8 +5,9 @@ class Job(object):
     def _reduce_name(self, map_task_id, reduce_task_id):
         return "{0}-{1}-{2}.txt".format(self.job_id, map_task_id, reduce_task_id)
 
-    def __init__(self, map_func, reduce_func, reduce_num):
+    def __init__(self, files, map_func, reduce_func, reduce_num):
         self.job_id = uuid.uuid4()
+        self.files = files
         self.map_func = map_func
         self.reduce_func = reduce_func
         self.reduce_num = reduce_num
@@ -19,3 +20,12 @@ class Job(object):
 
             with open(self._reduce_name(map_task_id, reduce_task_id), 'a') as f:
                 f.write("{0}\t{1}\n".format(key.encode('string_escape'), value.encode('string_escape')))
+
+    def apply(self, master):
+        pass
+
+    def wait(self):
+        pass
+
+    def assert_success(self):
+        pass
