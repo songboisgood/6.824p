@@ -1,6 +1,11 @@
 class MessageType(object):
+    DO_MAP_PHRASE = "DoMapPhrase"
+    DO_REDUCE_PHRASE = "DoReducePhrase"
+    MAP_DONE = "MapDone"
+    REDUCE_DONE = "ReduceDone"
+    SUBMIT_JOB = "SubmitJob"
     PHRASE_DONE = "PhraseDone"
-    CONTINUE_JOB = "ContinueJob"
+    CONTINUE = "ContinueJob"
     TASK_DONE = "TaskDone"
     SCHEDULE_TASK = "ScheduleTask"
     LAUNCH_TASK = "LaunchTask"
@@ -8,7 +13,8 @@ class MessageType(object):
     JOB_DONE = "JobDone"
     GET_JOB_STATUS = "GetJobStatus"
     REGISTER_WORKER = "RegisterWorker"
-    SCHEDULE_JOB = "ScheduleJob"
+    SCHEDULE_MAP_TASK = "ScheduleMapTASK"
+    SCHEDULE_REDUCE_TASK = "ScheduleReduceTASK"
 
 
 class TaskType(object):

@@ -1,88 +1,51 @@
-import asyncio
 import uuid
 
-from mitcode.mapreduce.constants import RegisterStatus, MessageType, JobStatus
-from mitcode.mapreduce.map_task import MapTask
+from mitcode.mapreduce.constants import MessageType
+from mitcode.mapreduce.map_phrase import MapPhrase
+from mitcode.mapreduce.reduce_phrase import ReducePhrase
+from mitcode.mapreduce.schedule import Schedule
 
 
 class Master(object):
     def __init__(self):
         self.master_id = uuid.uuid4()
-        self.m = self.master()
-        self.s = self.scheduler()
+        self._master = self._master_loop()
+        self._schedule = Schedule()
 
     def register(self, worker):
-        self.m.send(MessageType.REGISTER_WORKER, worker)
-
-    def master(self):
-        workers = []
-        worker_id = None
-        while True:
-            message_type, worker_id = yield RegisterStatus.REGISTERED, worker_id
-            if message_type == MessageType.REGISTER_WORKER:
-                workers.append(worker_id)
-                self.s.send(MessageType.REGISTER_WORKER, worker_id)
-
-            if message_type == MessageType.PHRASE_DONE:
-                pass
-
-
-    def scheduler(self):
-        workers_available = []
-        task_queue = []
-        task_done = 0
-        task_number = 0
-        while True:
-            (message_type, message) = yield
-            if message_type == MessageType.REGISTER_WORKER:
-                worker_id = message
-                workers_available.append(worker_id)
-                self.s.send(MessageType.CONTINUE_JOB)
-            elif message_type == MessageType.SCHEDULE_JOB:
-                job = message
-                task_number = len(job.files)
-                for file in job.files:
-                    task = MapTask(job.job_id, job.map_func, file, job.reduce_num)
-                    if len(workers_available) == 0:
-                        task_queue.append(task)
-                    else:
-                        worker = workers_available.pop(0)
-                        worker.assign_task(task)
-            elif message_type == MessageType.CONTINUE_JOB:
-                for worker in workers_available:
-                    if len(task_queue) > 0:
-                        task = task_queue.pop(0)
-                        worker.assign_task(task)
-            elif message_type == MessageType.TASK_DONE:
-                worker = message
-                workers_available.append(worker.worker_id)
-                self.s.send(MessageType.CONTINUE_JOB)
-                task_done += 1
-                if task_done == task_number:
-                    self.m.send(MessageType.PHRASE_DONE)
+        self._master.send(MessageType.REGISTER_WORKER, worker)
 
     def start(self):
-        next(self.m)
-        next(self.s)
+        next(self._master)
 
     def submit_job(self, job):
-        self._schedule(job)
+        self._master.send(MessageType.SUBMIT_JOB, job)
 
-    def job_waiter(self):
+    def _master_loop(self):
+        workers = []
+        jobs = {}
+        self._schedule.start()
         while True:
-            status = yield
-            if status == JobStatus.DONE:
-                break
+            message_type, message = yield
+            if message_type == MessageType.REGISTER_WORKER:
+                worker_id = message
+                workers.append(worker_id)
+                self._schedule.register_worker(worker_id)
 
-    def wait_job(self, job):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.job_waiter())
-        loop.close()
+            elif message_type == MessageType.SUBMIT_JOB:
+                job = message
+                jobs[job.job_id] = job
+                job.start()
+                map_phrase = MapPhrase(job.job_id, job.map_func, job.files, job.reduce_num)
+                self._schedule.schedule_map(map_phrase)
 
-    def _schedule(self, job):
-        self.s.send(job)
+            elif message_type == MessageType.MAP_DONE:
+                job_id = message
+                job = jobs[job_id]
+                reduce_phrase = ReducePhrase(job_id, job.reduce_func)
+                self._schedule.schedule_reduce(reduce_phrase)
 
-        while True:
-            (job_id, status) = self.s.send(job.job_id, MessageType.GET_JOB_STATUS)
-            if status == JobStatus.DONE:
-                self.m.send(MessageType.JOB_DONE, job.job_id)
+            elif message_type == MessageType.REDUCE_DONE:
+                job_id = message
+                jobs[job_id].finish_job()
+                jobs.pop(job_id)
